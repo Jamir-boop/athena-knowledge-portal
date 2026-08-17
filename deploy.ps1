@@ -8,7 +8,8 @@ $project = $PSScriptRoot
 Push-Location $project
 try {
     if (-not (Test-Path -LiteralPath (Join-Path $project 'node_modules'))) { npm ci; if ($LASTEXITCODE) { throw 'npm ci failed.' } }
-    & (Join-Path $project 'scripts\build.ps1')
+    pwsh -NoProfile -NonInteractive -File (Join-Path $project 'scripts\build.ps1')
+    if ($LASTEXITCODE) { throw 'Build failed.' }
     npm test
     if ($LASTEXITCODE) { throw 'Download proxy tests failed.' }
 

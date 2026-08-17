@@ -22,6 +22,9 @@ body.home-view .site-header{display:flex}
 body.home-view #main{min-height:calc(100vh - 84px)}
 .sidebar{top:0;background:var(--surface);border-right:1px solid var(--border);padding:1.4rem 1.2rem}
 body.home-view .sidebar{top:84px}
+.sidebar .app-name{display:block;margin:0 auto 1.4rem}
+body.home-view .sidebar .app-name{display:none}
+.sidebar .app-name .brand{color:var(--text)}
 .sidebar-nav>ul>li>a{font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .sidebar ul li a{color:var(--muted)}
 .sidebar ul li.active>a,.sidebar ul li a:hover{color:var(--accent)}
@@ -34,6 +37,7 @@ body.home-view .sidebar{top:84px}
 .markdown-section>p,.markdown-section>ul,.markdown-section>ol,.markdown-section>blockquote{max-width:72ch}
 body .markdown-section h1,body .markdown-section h2,body .markdown-section h3{font-family:"Cormorant",Georgia,serif;color:var(--text);font-weight:700;line-height:1.08}
 body .markdown-section h1 a,body .markdown-section h2 a,body .markdown-section h3 a{color:inherit}
+body .markdown-section .anchor span{color:var(--accent)}
 body .markdown-section h1{font-size:clamp(2.7rem,6vw,4.8rem);letter-spacing:-.02em;margin-top:0}
 body .markdown-section h2{font-size:2.2rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;margin-top:2.5rem}
 body .markdown-section h3{font-size:1.6rem;color:var(--accent)}

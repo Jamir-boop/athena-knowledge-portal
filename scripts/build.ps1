@@ -4,6 +4,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    throw 'Athena builds require PowerShell 7 (pwsh) so UTF-8 text is decoded correctly.'
+}
 $project = Split-Path $PSScriptRoot -Parent
 $dist = Join-Path $project 'dist'
 $sourceRoot = (Resolve-Path -LiteralPath $Source).Path.TrimEnd('\')
@@ -20,6 +23,9 @@ Copy-Item -LiteralPath (Join-Path $project 'src\index.html'), (Join-Path $projec
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\docsify.min.js') -Destination (Join-Path $dist 'vendor\docsify.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\plugins\search.min.js') -Destination (Join-Path $dist 'vendor\search.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\themes\vue.css') -Destination (Join-Path $dist 'vendor\vue.css')
+$themePath = Join-Path $dist 'vendor\vue.css'
+$themeCss = [IO.File]::ReadAllText($themePath, [Text.Encoding]::UTF8).Replace('#34495e', '#ffb900')
+[IO.File]::WriteAllText($themePath, $themeCss, [Text.UTF8Encoding]::new($false))
 Copy-Item -Path (Join-Path $project 'src\fonts\*') -Destination (Join-Path $dist 'fonts')
 Copy-Item -Path (Join-Path $project 'src\assets\*') -Destination (Join-Path $dist 'assets')
 
@@ -194,7 +200,18 @@ $largeOutput = Get-ChildItem -LiteralPath $dist -File -Recurse | Where-Object Le
 if ($largeOutput) { throw "Pages output contains a file of 25 MB or more: $($largeOutput.FullName -join ', ')" }
 if ($catalog.Count -ne $sourceFiles.Count) { throw "Catalog count does not match the source inventory." }
 $publicFiles = Get-ChildItem -LiteralPath $dist -File -Recurse
-if ($publicFiles | Select-String -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) {
+$publicTextFiles = $publicFiles | Where-Object Extension -in '.css', '.html', '.js', '.json', '.md'
+$mojibakePattern = '[\u00C2\u00C3][\u0080-\u00BF]|\u00E2\u20AC.|\uFFFD'
+$badEncoding = $publicTextFiles | Where-Object {
+    [regex]::IsMatch([IO.File]::ReadAllText($_.FullName, [Text.Encoding]::UTF8), $mojibakePattern)
+}
+if ($badEncoding) {
+    throw "Generated text contains invalid UTF-8 or mojibake: $($badEncoding.FullName -join ', ')"
+}
+if ($publicTextFiles | Select-String -SimpleMatch '#34495e' -ErrorAction SilentlyContinue) {
+    throw 'The deprecated low-contrast color #34495e remains in the public output.'
+}
+if ($publicTextFiles | Select-String -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) {
     throw 'A OneDrive origin URL was written into the public output.'
 }
 
