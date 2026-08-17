@@ -1,14 +1,16 @@
 @font-face{font-family:"Cormorant";src:url("/fonts/cormorant.woff2") format("woff2");font-display:swap}
 @font-face{font-family:"Archivo Narrow";src:url("/fonts/archivo-narrow.woff2") format("woff2");font-display:swap}
 @font-face{font-family:"Courier Prime";src:url("/fonts/courier-prime.woff2") format("woff2");font-display:swap}
-:root{--bg:#000;--surface:#050505;--surface-2:#101010;--text:#fff;--strong:#f5f0e6;--muted:#b5b5b5;--accent:#ffb900;--code:#ffe08a;--theme-color:#ffb900;--border:#332500;--border-strong:#664a00;--inactive:#929292;--sidebar-width:280px}
+:root{--bg:#000;--surface:#050505;--surface-2:#101010;--text:#fff;--strong:#f5f0e6;--muted:#b5b5b5;--accent:#ffb900;--emphasis:#ffd45c;--code:#ffe08a;--theme-color:#ffb900;--border:#332500;--border-strong:#664a00;--inactive:#929292;--sidebar-width:280px}
 *{box-sizing:border-box}
 html{background:var(--bg);color-scheme:dark;scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font:18px/1.55 "Archivo Narrow",Arial,sans-serif}
+body small{display:block;margin:.25rem 0;line-height:1.35}
 main{width:auto}
 ::selection{background:var(--accent);color:#000}
 *{scrollbar-color:var(--border-strong) var(--bg)}
 a{color:var(--accent);text-underline-offset:.2em}
+body em{color:var(--emphasis)!important}
 a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .skip-link{position:fixed;left:1rem;top:-5rem;z-index:50;background:var(--accent);color:#000;padding:.6rem 1rem;font-weight:700}
 .skip-link:focus{top:1rem}
@@ -16,7 +18,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid var(-
 body.home-view .site-header{display:flex}
 .brand{display:flex;flex-direction:column;color:var(--text);text-decoration:none;line-height:.8;text-align:center;letter-spacing:.12em}
 .brand span{font:700 32px/1 "Cormorant",Georgia,serif}
-.brand small{margin-top:.55rem;color:var(--accent);font:700 10px/1 "Courier Prime",monospace;letter-spacing:.22em}
+.brand small{margin:.55rem 0 0;color:var(--accent);font:700 10px/1 "Courier Prime",monospace;letter-spacing:.22em}
 .access-label{border:1px solid var(--border-strong);padding:.4rem .65rem;color:var(--accent);font:700 11px/1 "Courier Prime",monospace;letter-spacing:.1em}
 #main{min-height:100vh;width:auto}
 body.home-view #main{min-height:calc(100vh - 84px)}
@@ -63,7 +65,7 @@ body .markdown-section pre code{background:transparent;color:var(--strong)}
 .catalog-list{display:grid;gap:1px;background:var(--border);border:1px solid var(--border);margin:1.5rem 0}
 .catalog-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center;background:var(--surface);padding:1rem}
 .catalog-item code{display:block;background:transparent;color:var(--muted);padding:0;font-size:.72rem;overflow-wrap:anywhere}
-.catalog-item small{color:var(--muted)}
+.catalog-item small{color:var(--muted);margin:.15rem 0 .35rem}
 .download-link,.download-pending{display:inline-block;min-width:96px;border:1px solid var(--accent);padding:.55rem .75rem;text-align:center;text-decoration:none;font:700 12px "Courier Prime",monospace;text-transform:uppercase}
 .download-link{background:var(--accent);color:#000!important}
 .download-pending{border-color:#555;color:var(--inactive)}
