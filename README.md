@@ -23,9 +23,11 @@ Para invalidar los enlaces publicados y crear otros nuevos:
 .\deploy.ps1
 ```
 
-El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs. Sin `-Rotate`, OneDrive puede reutilizar un enlace existente. Con `-Rotate`, el script revoca todos los enlaces anónimos de cada archivo antes de crear el reemplazo.
+El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, agrupa los archivos por carpeta, crea un enlace anónimo de solo lectura por carpeta y reemplaza la lista blanca privada. No imprime las URLs. Un archivo aprobado que esté en la raíz conserva un enlace individual para no compartir todo `framework`.
 
-El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca y escribe los enlaces aprobados en las páginas estáticas públicas. Cualquier otro tipo de archivo permanece como **Pendiente**.
+Sin `-Rotate`, OneDrive puede reutilizar un enlace existente. Con `-Rotate`, el script revoca cualquier enlace anónimo amplio de `framework`, elimina los enlaces directos anteriores de los archivos y renueva los enlaces de carpeta.
+
+El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca, refleja el contenido de cada carpeta y escribe un solo enlace público por carpeta aprobada. Cualquier otra carpeta permanece como **Pendiente**.
 
 Todo visitante puede ver y copiar los enlaces anónimos de OneDrive. Ejecute `sync-onedrive-links.ps1 -Rotate` y vuelva a desplegar para rotarlos. Durante esos dos pasos, algunos enlaces publicados pueden dejar de funcionar hasta completar el despliegue.
 

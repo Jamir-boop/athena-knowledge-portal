@@ -21,13 +21,21 @@ if (-not $sourceRoot.StartsWith("$driveRoot\", [StringComparison]::OrdinalIgnore
 
 $requestedWhatIf = $WhatIfPreference
 $WhatIfPreference = $false
-try { & (Join-Path $PSScriptRoot 'build.ps1') -Source $sourceRoot }
+try { & (Join-Path $PSScriptRoot 'build.ps1') -Source $sourceRoot -IgnoreLinks }
 finally { $WhatIfPreference = $requestedWhatIf }
 $catalog = Get-Content -LiteralPath (Join-Path $project 'dist\catalog.json') -Raw | ConvertFrom-Json
-$targets = @($catalog | Where-Object { [IO.Path]::GetExtension($_.relativePath).ToLowerInvariant() -in '.zip', '.jar', '.exe' })
+$approvedFiles = @($catalog | Where-Object { [IO.Path]::GetExtension($_.relativePath).ToLowerInvariant() -in '.zip', '.jar', '.exe' })
+$targets = @($approvedFiles | Group-Object linkKey | ForEach-Object {
+    $first = $_.Group[0]
+    [pscustomobject]@{
+        key = $first.linkKey
+        kind = $first.linkKind
+        relativePath = if ($first.linkKind -eq 'folder') { $first.folderPath } else { $first.relativePath }
+    }
+})
 if (-not $targets) { throw 'No ZIP, JAR, or EXE files were found.' }
 $action = if ($Rotate) { 'Revoke anonymous links, create replacements, and replace the local whitelist' } else { 'Create anonymous read-only links and replace the local whitelist' }
-if (-not $PSCmdlet.ShouldProcess("$($targets.Count) OneDrive files", $action)) { return }
+if (-not $PSCmdlet.ShouldProcess("$($targets.Count) OneDrive folders or files", $action)) { return }
 
 $moduleVersion = '2.39.0'
 $moduleRoot = Join-Path $project '.tools\powershell'
@@ -50,19 +58,43 @@ if ($drive.driveType -ne 'personal') {
 }
 
 $links = [ordered]@{}
-$position = 0
-foreach ($target in $targets) {
-    $position++
-    Write-Progress -Activity 'Creating OneDrive download links' -Status "$position of $($targets.Count)" -PercentComplete (($position / $targets.Count) * 100)
-
-    $localPath = (Resolve-Path -LiteralPath (Join-Path $sourceRoot $target.relativePath)).Path
+$getDriveItem = {
+    param([string]$relativePath)
+    $localPath = (Resolve-Path -LiteralPath (Join-Path $sourceRoot $relativePath)).Path
     if (-not $localPath.StartsWith("$driveRoot\", [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Catalog file is outside OneDrive: $($target.relativePath)"
+        throw "Catalog path is outside OneDrive: $relativePath"
     }
     $drivePath = $localPath.Substring($driveRoot.Length).TrimStart('\')
     $encodedPath = (($drivePath -split '\\' | ForEach-Object { [Uri]::EscapeDataString($_) }) -join '/')
-    $item = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/root:/$encodedPath"
-    if ($Rotate) {
+    Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/root:/$encodedPath"
+}
+if ($Rotate) {
+    $sourceItem = & $getDriveItem ''
+    $sourcePermissions = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($sourceItem.id)/permissions?`$select=id,link,inheritedFrom"
+    $sourceAnonymous = @($sourcePermissions.value | Where-Object { $_.link.scope -eq 'anonymous' })
+    if ($sourceAnonymous | Where-Object inheritedFrom) {
+        throw 'Cannot rotate because the framework folder inherits an anonymous link. Revoke it from the parent folder first.'
+    }
+    foreach ($existing in $sourceAnonymous) {
+        $permissionId = [Uri]::EscapeDataString([string]$existing.id)
+        Invoke-MgGraphRequest -Method DELETE -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($sourceItem.id)/permissions/$permissionId" | Out-Null
+    }
+    foreach ($file in $approvedFiles) {
+        $item = & $getDriveItem $file.relativePath
+        $permissions = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/permissions?`$select=id,link,inheritedFrom"
+        foreach ($existing in @($permissions.value | Where-Object { $_.link.scope -eq 'anonymous' -and -not $_.inheritedFrom })) {
+            $permissionId = [Uri]::EscapeDataString([string]$existing.id)
+            Invoke-MgGraphRequest -Method DELETE -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/permissions/$permissionId" | Out-Null
+        }
+    }
+}
+$position = 0
+foreach ($target in $targets) {
+    $position++
+    Write-Progress -Activity 'Creating OneDrive links' -Status "$position of $($targets.Count)" -PercentComplete (($position / $targets.Count) * 100)
+
+    $item = & $getDriveItem $target.relativePath
+    if ($Rotate -and $target.kind -eq 'folder') {
         $permissions = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/permissions?`$select=id,link,inheritedFrom"
         $anonymousPermissions = @($permissions.value | Where-Object { $_.link.scope -eq 'anonymous' })
         if ($anonymousPermissions | Where-Object inheritedFrom) {
@@ -87,7 +119,7 @@ foreach ($target in $targets) {
     }
     $links[$target.key] = $url.AbsoluteUri
 }
-Write-Progress -Activity 'Creating OneDrive download links' -Completed
+Write-Progress -Activity 'Creating OneDrive links' -Completed
 
 $secretDirectory = Join-Path $project '.secrets'
 $secretFile = Join-Path $secretDirectory 'onedrive-links.json'

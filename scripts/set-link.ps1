@@ -20,7 +20,7 @@ if (-not (Test-Path -LiteralPath $catalogFile)) {
 }
 
 $catalog = Get-Content -LiteralPath $catalogFile -Raw | ConvertFrom-Json
-$item = $catalog | Where-Object key -eq $Key | Select-Object -First 1
+$item = $catalog | Where-Object linkKey -eq $Key | Select-Object -First 1
 if (-not $item) { throw "Unknown catalog key: $Key" }
 if ($Url.Scheme -ne 'https' -or $Url.Host.ToLowerInvariant() -notin @('1drv.ms', 'onedrive.live.com')) {
     throw 'Use an HTTPS anonymous sharing URL from 1drv.ms or onedrive.live.com.'
@@ -44,4 +44,5 @@ if ([Text.Encoding]::UTF8.GetByteCount($json) -gt 4900) {
 }
 [IO.File]::WriteAllText($secretFile, $json, [Text.UTF8Encoding]::new($false))
 
-Write-Host "Saved a private link for $($item.name). Run .\deploy.ps1 to publish it."
+$target = if ($item.linkKind -eq 'folder') { $item.folderPath } else { $item.name }
+Write-Host "Saved a private link for $target. Run .\deploy.ps1 to publish it."
