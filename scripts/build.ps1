@@ -190,7 +190,7 @@ foreach ($page in $pages.GetEnumerator()) {
 
 <div class="contribute-note"><p>¿Documentaste una solución que el equipo puede volver a usar?</p><a href="#/content/contributing">Cómo contribuir</a></div>
 
-> Los archivos marcados como **Pendiente** no tienen todavía un vínculo privado configurado en Athena.
+> Los archivos marcados como **Pendiente** no tienen todavía un vínculo de OneDrive configurado en Athena.
 '@ | Set-Content -LiteralPath (Join-Path $dist 'README.md') -Encoding utf8
 
 $sidebar = [Collections.Generic.List[string]]::new()

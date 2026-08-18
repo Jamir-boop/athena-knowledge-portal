@@ -9,5 +9,5 @@
 - Never accept a checkout, add a payment method, or upgrade a plan for this project.
 - Budget alerts are informational and are not a spending cap.
 - If a Cloudflare action has an uncertain price or any possibility of a charge, stop before the action and report the risk.
-- Keep downloadable files in OneDrive. Publish approved links only in the Access-protected static pages; do not add Pages Functions, Workers, R2, or another metered download service.
-- Never deploy approved links unless the anonymous Access preflight in `deploy.ps1` passes.
+- Keep downloadable files in OneDrive. Publish approved links only in static Pages; do not add Pages Functions, Workers, R2, or another metered download service.
+- OneDrive links are public. Keep the local whitelist private, and rotate or revoke published links when needed.

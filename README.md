@@ -1,6 +1,6 @@
 # Athena Knowledge Portal
 
-Portal interno, estático y protegido con Cloudflare Access. Los documentos y archivos de descarga siguen bajo control de `C:\Users\superuser\OneDrive\dev\framework`.
+Portal público y estático. Los documentos y archivos de descarga siguen bajo control de `C:\Users\superuser\OneDrive\dev\framework`.
 
 ## Uso
 
@@ -18,11 +18,9 @@ Para crear o actualizar todos los enlaces de descarga aprobados, ejecute un solo
 
 El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs.
 
-El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca y escribe los enlaces aprobados en las páginas estáticas protegidas por Cloudflare Access. Cualquier otro tipo de archivo permanece como **Pendiente**.
+El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca y escribe los enlaces aprobados en las páginas estáticas públicas. Cualquier otro tipo de archivo permanece como **Pendiente**.
 
-Athena no oculta el destino después del clic: un usuario autorizado puede ver y copiar el enlace anónimo de OneDrive. Revóquelo en OneDrive si deja de ser válido.
-
-`deploy.ps1` comprueba el acceso anónimo antes del build. Si Cloudflare no redirige al inicio de sesión de Access, se detiene sin publicar los enlaces.
+Todo visitante puede ver y copiar los enlaces anónimos de OneDrive. Ejecute `sync-onedrive-links.ps1` y vuelva a desplegar para rotarlos. Revoque en OneDrive cualquier enlace que deje de ser válido.
 
 `set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
 
@@ -46,5 +44,5 @@ npx -y impeccable check --providers=codex --scope=project
 
 - No hay base de datos, CMS, Pages Functions, Workers ni almacenamiento R2.
 - El costo permitido de Cloudflare es USD 0. Consulte `AGENTS.md` antes de cambiar cualquier servicio de Cloudflare.
-- Athena protege el acceso al portal. Un vínculo de OneDrive filtrado conserva sus permisos propios.
+- Athena publica un índice de vínculos de OneDrive; OneDrive controla sus permisos y revocación.
 - Los vínculos de OneDrive se crean de forma automática con Microsoft Graph y el permiso delegado `Files.ReadWrite`.
