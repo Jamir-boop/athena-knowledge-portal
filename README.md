@@ -18,7 +18,9 @@ Para crear o actualizar todos los enlaces de descarga aprobados, ejecute un solo
 
 El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs.
 
-El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` tampoco se publica. El despliegue lo carga como el secreto `ONEDRIVE_LINKS` de Pages. Sus claves son la lista blanca efectiva; cualquier otro tipo de archivo permanece como **Pendiente**.
+El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca y escribe los enlaces aprobados en las páginas estáticas protegidas por Cloudflare Access. Cualquier otro tipo de archivo permanece como **Pendiente**.
+
+Athena no oculta el destino después del clic: un usuario autorizado puede ver y copiar el enlace anónimo de OneDrive. Revóquelo en OneDrive si deja de ser válido.
 
 `set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
 
@@ -40,7 +42,7 @@ npx -y impeccable check --providers=codex --scope=project
 
 ## Límites deliberados
 
-- No hay base de datos, CMS, autenticación de lectores ni almacenamiento R2.
+- No hay base de datos, CMS, Pages Functions, Workers ni almacenamiento R2.
 - El costo permitido de Cloudflare es USD 0. Consulte `AGENTS.md` antes de cambiar cualquier servicio de Cloudflare.
 - Athena protege el acceso al portal. Un vínculo de OneDrive filtrado conserva sus permisos propios.
 - Los vínculos de OneDrive se crean de forma automática con Microsoft Graph y el permiso delegado `Files.ReadWrite`.

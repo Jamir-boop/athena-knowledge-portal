@@ -4,13 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pwsh -NoProfile -NonInteractive -File scripts/build.ps1",
-    "test": "node --test test/download.test.mjs",
-    "types": "wrangler types"
+    "build": "pwsh -NoProfile -NonInteractive -File scripts/build.ps1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260815.1",
-    "@types/node": "26.2.0",
     "docsify": "5.0.0",
     "wrangler": "4.123.0"
   }

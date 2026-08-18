@@ -19,7 +19,7 @@ if (Test-Path -LiteralPath $dist) {
 }
 New-Item -ItemType Directory -Force -Path $dist, (Join-Path $dist 'content'), (Join-Path $dist 'vendor'), (Join-Path $dist 'fonts'), (Join-Path $dist 'assets') | Out-Null
 
-Copy-Item -LiteralPath (Join-Path $project 'src\index.html'), (Join-Path $project 'src\styles.css'), (Join-Path $project 'src\config.js'), (Join-Path $project 'src\app.js'), (Join-Path $project 'src\_headers'), (Join-Path $project 'src\_routes.json') -Destination $dist
+Copy-Item -LiteralPath (Join-Path $project 'src\index.html'), (Join-Path $project 'src\styles.css'), (Join-Path $project 'src\config.js'), (Join-Path $project 'src\app.js'), (Join-Path $project 'src\_headers') -Destination $dist
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\docsify.min.js') -Destination (Join-Path $dist 'vendor\docsify.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\plugins\search.min.js') -Destination (Join-Path $dist 'vendor\search.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\themes\vue.css') -Destination (Join-Path $dist 'vendor\vue.css')
@@ -55,28 +55,43 @@ function Format-Size([long]$bytes) {
     return "$bytes B"
 }
 
+$approvedExtensions = @('.zip', '.jar', '.exe')
 $configured = @{}
 $secretFile = Join-Path $project '.secrets\onedrive-links.json'
 if (Test-Path -LiteralPath $secretFile) {
     $secretObject = Get-Content -LiteralPath $secretFile -Raw | ConvertFrom-Json
-    foreach ($property in $secretObject.PSObject.Properties) { $configured[$property.Name] = $true }
+    foreach ($property in $secretObject.PSObject.Properties) {
+        $url = [uri]$property.Value
+        if ($url.Scheme -ne 'https' -or $url.Host.ToLowerInvariant() -notin '1drv.ms', 'onedrive.live.com') {
+            throw "Invalid OneDrive URL for catalog key: $($property.Name)"
+        }
+        $configured[$property.Name] = $url.AbsoluteUri
+    }
 }
 
 $sourceFiles = @(Get-ChildItem -LiteralPath $sourceRoot -File -Recurse | Sort-Object FullName)
 $catalog = foreach ($file in $sourceFiles) {
     $relative = $file.FullName.Substring($sourceRoot.Length).TrimStart('\')
+    $key = Get-Key $relative
+    $approved = $file.Extension.ToLowerInvariant() -in $approvedExtensions
+    $downloadUrl = if ($approved -and $configured.ContainsKey($key)) { $configured[$key] } else { $null }
     [pscustomobject]@{
-        key = Get-Key $relative
+        key = $key
         name = $file.Name
         section = Get-Section $relative
         relativePath = $relative
         bytes = $file.Length
         size = Format-Size $file.Length
-        available = $configured.ContainsKey((Get-Key $relative))
+        available = [bool]$downloadUrl
+        downloadUrl = $downloadUrl
     }
 }
 
-$catalog | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $dist 'catalog.json') -Encoding utf8
+$approvedKeys = @($catalog | Where-Object { [IO.Path]::GetExtension($_.relativePath).ToLowerInvariant() -in $approvedExtensions } | ForEach-Object key)
+$unknownKeys = @($configured.Keys | Where-Object { $_ -notin $approvedKeys })
+if ($unknownKeys) { throw "The private whitelist contains unknown or unapproved keys: $($unknownKeys -join ', ')" }
+$configuredDownloads = @($catalog | Where-Object available)
+$catalog | Select-Object key, name, section, relativePath, bytes, size, available | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $dist 'catalog.json') -Encoding utf8
 
 function Get-ArticleSlug([string]$name) {
     $slug = ([IO.Path]::GetFileNameWithoutExtension($name).ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
@@ -132,7 +147,8 @@ function New-CatalogPage([string]$title, [string]$intro, [object[]]$items) {
         $lines.Add('<article class="catalog-item">')
         $lines.Add("<div><strong>$name</strong><small>$($item.size)</small><code>$path</code></div>")
         if ($item.available) {
-            $lines.Add("<a class=`"download-link`" href=`"/download/$($item.key)`" download=`"$name`">Descargar</a>")
+            $href = [Net.WebUtility]::HtmlEncode($item.downloadUrl)
+            $lines.Add("<a class=`"download-link`" href=`"$href`" target=`"_blank`" rel=`"nofollow noreferrer`" referrerpolicy=`"no-referrer`">Abrir en OneDrive</a>")
         } else {
             $lines.Add('<span class="download-pending" aria-label="Enlace pendiente">Pendiente</span>')
         }
@@ -211,8 +227,11 @@ if ($badEncoding) {
 if ($publicTextFiles | Select-String -SimpleMatch '#34495e' -ErrorAction SilentlyContinue) {
     throw 'The deprecated low-contrast color #34495e remains in the public output.'
 }
-if ($publicTextFiles | Select-String -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) {
-    throw 'A OneDrive origin URL was written into the public output.'
+$downloadPage = [IO.File]::ReadAllText((Join-Path $dist 'downloads.md'), [Text.Encoding]::UTF8)
+$downloadAnchorCount = [regex]::Matches($downloadPage, '<a class="download-link" href="https://(?:1drv\.ms|onedrive\.live\.com)/').Count
+if ($downloadAnchorCount -ne $configuredDownloads.Count) { throw 'The generated download whitelist does not match the approved catalog entries.' }
+if (Select-String -LiteralPath (Join-Path $dist 'catalog.json') -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) {
+    throw 'OneDrive URLs must not be written into catalog.json.'
 }
 
-Write-Host "Built Athena with $($articles.Count) articles, $($catalog.Count) catalog entries, and $($configured.Count) configured downloads."
+Write-Host "Built Athena with $($articles.Count) articles, $($catalog.Count) catalog entries, and $($configuredDownloads.Count) configured downloads."

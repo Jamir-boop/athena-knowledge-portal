@@ -9,5 +9,4 @@
 - Never accept a checkout, add a payment method, or upgrade a plan for this project.
 - Budget alerts are informational and are not a spending cap.
 - If a Cloudflare action has an uncertain price or any possibility of a charge, stop before the action and report the risk.
-- Keep downloadable files in OneDrive. Cloudflare may only proxy approved OneDrive links through Pages Functions on Workers Free.
-
+- Keep downloadable files in OneDrive. Publish approved links only in the Access-protected static pages; do not add Pages Functions, Workers, R2, or another metered download service.
