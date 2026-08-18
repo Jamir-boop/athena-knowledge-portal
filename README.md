@@ -9,14 +9,18 @@ npm install
 .\deploy.ps1
 ```
 
-Para habilitar una descarga, cree un vínculo anónimo de OneDrive y guárdelo por su clave:
+Para crear o actualizar todos los enlaces de descarga aprobados, ejecute un solo comando:
 
 ```powershell
-.\scripts\set-link.ps1 -Key "clave-del-catalogo" -Url "https://1drv.ms/..."
+.\scripts\sync-onedrive-links.ps1
 .\deploy.ps1
 ```
 
-El archivo `.secrets\onedrive-links.json` nunca se publica. El despliegue lo carga como el secreto `ONEDRIVE_LINKS` de Pages.
+El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs.
+
+El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` tampoco se publica. El despliegue lo carga como el secreto `ONEDRIVE_LINKS` de Pages. Sus claves son la lista blanca efectiva; cualquier otro tipo de archivo permanece como **Pendiente**.
+
+`set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
 
 ## Artículos
 
@@ -37,5 +41,6 @@ npx -y impeccable check --providers=codex --scope=project
 ## Límites deliberados
 
 - No hay base de datos, CMS, autenticación de lectores ni almacenamiento R2.
+- El costo permitido de Cloudflare es USD 0. Consulte `AGENTS.md` antes de cambiar cualquier servicio de Cloudflare.
 - Athena protege el acceso al portal. Un vínculo de OneDrive filtrado conserva sus permisos propios.
-- Los vínculos de OneDrive se crean y revocan manualmente en OneDrive.
+- Los vínculos de OneDrive se crean de forma automática con Microsoft Graph y el permiso delegado `Files.ReadWrite`.

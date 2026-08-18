@@ -1,10 +1,18 @@
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Url')]
 param(
     [Parameter(Mandatory)][ValidatePattern('^[a-z0-9][a-z0-9-]{0,127}$')][string]$Key,
-    [Parameter(Mandatory)][uri]$Url
+    [Parameter(Mandatory, ParameterSetName = 'Url')][uri]$Url,
+    [Parameter(Mandatory, ParameterSetName = 'Clipboard')][switch]$FromClipboard
 )
 
 $ErrorActionPreference = 'Stop'
+if ($FromClipboard) {
+    $clipboardValue = ([string](Get-Clipboard -Raw)).Trim()
+    if (-not [uri]::TryCreate($clipboardValue, [UriKind]::Absolute, [ref]$Url)) {
+        throw 'The clipboard does not contain a valid absolute URL.'
+    }
+}
+
 $project = Split-Path $PSScriptRoot -Parent
 $catalogFile = Join-Path $project 'dist\catalog.json'
 if (-not (Test-Path -LiteralPath $catalogFile)) {
@@ -12,7 +20,8 @@ if (-not (Test-Path -LiteralPath $catalogFile)) {
 }
 
 $catalog = Get-Content -LiteralPath $catalogFile -Raw | ConvertFrom-Json
-if (-not ($catalog.key -contains $Key)) { throw "Unknown catalog key: $Key" }
+$item = $catalog | Where-Object key -eq $Key | Select-Object -First 1
+if (-not $item) { throw "Unknown catalog key: $Key" }
 if ($Url.Scheme -ne 'https' -or $Url.Host.ToLowerInvariant() -notin @('1drv.ms', 'onedrive.live.com')) {
     throw 'Use an HTTPS anonymous sharing URL from 1drv.ms or onedrive.live.com.'
 }
@@ -35,5 +44,4 @@ if ([Text.Encoding]::UTF8.GetByteCount($json) -gt 4900) {
 }
 [IO.File]::WriteAllText($secretFile, $json, [Text.UTF8Encoding]::new($false))
 
-$item = $catalog | Where-Object key -eq $Key | Select-Object -First 1
 Write-Host "Saved a private link for $($item.name). Run .\deploy.ps1 to publish it."
