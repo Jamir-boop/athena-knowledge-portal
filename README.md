@@ -22,6 +22,8 @@ El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y n
 
 Athena no oculta el destino después del clic: un usuario autorizado puede ver y copiar el enlace anónimo de OneDrive. Revóquelo en OneDrive si deja de ser válido.
 
+`deploy.ps1` comprueba el acceso anónimo antes del build. Si Cloudflare no redirige al inicio de sesión de Access, se detiene sin publicar los enlaces.
+
 `set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
 
 ## Artículos
