@@ -16,11 +16,18 @@ Para crear o actualizar todos los enlaces de descarga aprobados, ejecute un solo
 .\deploy.ps1
 ```
 
-El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs.
+Para invalidar los enlaces publicados y crear otros nuevos:
+
+```powershell
+.\scripts\sync-onedrive-links.ps1 -Rotate
+.\deploy.ps1
+```
+
+El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, crea enlaces anónimos de solo lectura y reemplaza la lista blanca privada. No imprime las URLs. Sin `-Rotate`, OneDrive puede reutilizar un enlace existente. Con `-Rotate`, el script revoca todos los enlaces anónimos de cada archivo antes de crear el reemplazo.
 
 El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca y escribe los enlaces aprobados en las páginas estáticas públicas. Cualquier otro tipo de archivo permanece como **Pendiente**.
 
-Todo visitante puede ver y copiar los enlaces anónimos de OneDrive. Ejecute `sync-onedrive-links.ps1` y vuelva a desplegar para rotarlos. Revoque en OneDrive cualquier enlace que deje de ser válido.
+Todo visitante puede ver y copiar los enlaces anónimos de OneDrive. Ejecute `sync-onedrive-links.ps1 -Rotate` y vuelva a desplegar para rotarlos. Durante esos dos pasos, algunos enlaces publicados pueden dejar de funcionar hasta completar el despliegue.
 
 `set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
 

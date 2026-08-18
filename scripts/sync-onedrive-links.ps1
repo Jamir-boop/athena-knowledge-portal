@@ -1,7 +1,8 @@
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
 param(
     [string]$Source = 'C:\Users\superuser\OneDrive\dev\framework',
-    [string]$OneDriveRoot = $env:OneDriveConsumer
+    [string]$OneDriveRoot = $env:OneDriveConsumer,
+    [switch]$Rotate
 )
 
 $ErrorActionPreference = 'Stop'
@@ -25,7 +26,8 @@ finally { $WhatIfPreference = $requestedWhatIf }
 $catalog = Get-Content -LiteralPath (Join-Path $project 'dist\catalog.json') -Raw | ConvertFrom-Json
 $targets = @($catalog | Where-Object { [IO.Path]::GetExtension($_.relativePath).ToLowerInvariant() -in '.zip', '.jar', '.exe' })
 if (-not $targets) { throw 'No ZIP, JAR, or EXE files were found.' }
-if (-not $PSCmdlet.ShouldProcess("$($targets.Count) OneDrive files", 'Create anonymous read-only links and replace the local whitelist')) { return }
+$action = if ($Rotate) { 'Revoke anonymous links, create replacements, and replace the local whitelist' } else { 'Create anonymous read-only links and replace the local whitelist' }
+if (-not $PSCmdlet.ShouldProcess("$($targets.Count) OneDrive files", $action)) { return }
 
 $moduleVersion = '2.39.0'
 $moduleRoot = Join-Path $project '.tools\powershell'
@@ -60,6 +62,17 @@ foreach ($target in $targets) {
     $drivePath = $localPath.Substring($driveRoot.Length).TrimStart('\')
     $encodedPath = (($drivePath -split '\\' | ForEach-Object { [Uri]::EscapeDataString($_) }) -join '/')
     $item = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/root:/$encodedPath"
+    if ($Rotate) {
+        $permissions = Invoke-MgGraphRequest -Method GET -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/permissions?`$select=id,link,inheritedFrom"
+        $anonymousPermissions = @($permissions.value | Where-Object { $_.link.scope -eq 'anonymous' })
+        if ($anonymousPermissions | Where-Object inheritedFrom) {
+            throw "Cannot rotate an anonymous link inherited by $($target.relativePath). Revoke it from the parent folder first."
+        }
+        foreach ($existing in $anonymousPermissions) {
+            $permissionId = [Uri]::EscapeDataString([string]$existing.id)
+            Invoke-MgGraphRequest -Method DELETE -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/permissions/$permissionId" | Out-Null
+        }
+    }
     $permission = Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/me/drive/items/$($item.id)/createLink" -Body (@{
         type = 'view'
         scope = 'anonymous'
