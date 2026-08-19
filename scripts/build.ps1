@@ -357,7 +357,7 @@ $homePage = @'
     <p>Conocimiento probado, herramientas y actualizaciones para crear y operar automatizaciones.</p>
     <div id="home-search-slot" aria-label="Buscar en Athena"></div>
   </div>
-  <img src="/assets/athena-dither.webp" alt="" width="900" height="900">
+  <img src="/assets/athena-dither-2.webp" alt="" width="900" height="900">
 </section>
 
 ## Explorar
