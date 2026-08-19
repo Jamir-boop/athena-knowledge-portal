@@ -117,8 +117,9 @@ $content = foreach ($file in $markdownFiles) {
     }
     $slug = [string]$metadata.slug
     if ($slug -cnotmatch '^[a-z0-9]+(?:-[a-z0-9]+)*$') { throw "Invalid metadata slug '$slug' in $relative" }
+    if ($metadata.tags -isnot [array]) { throw "Metadata tags must be an array of non-empty strings in $relative" }
     $tags = @($metadata.tags)
-    if ($null -eq $metadata.tags -or @($tags | Where-Object { $_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_) }).Count) { throw "Metadata tags must be an array of non-empty strings in $relative" }
+    if (@($tags | Where-Object { $_ -isnot [string] -or [string]::IsNullOrWhiteSpace($_) }).Count) { throw "Metadata tags must be an array of non-empty strings in $relative" }
     $status = [string]$metadata.status
     if ($status -and $status -notin $allowedStatuses) { throw "Unknown tool status '$status' in $relative" }
     if ($metadata.kind -eq 'tool' -and -not $status) { throw "Tool metadata requires a status in $relative" }
@@ -135,7 +136,9 @@ $content = foreach ($file in $markdownFiles) {
     $pdfSource = $null
     if ($metadata.pdf) {
         $pdfSource = [IO.Path]::GetFullPath((Join-Path $file.DirectoryName ([string]$metadata.pdf)))
-        if (-not $pdfSource.StartsWith($docsRoot, [StringComparison]::OrdinalIgnoreCase) -or [IO.Path]::GetExtension($pdfSource) -ne '.pdf' -or -not (Test-Path -LiteralPath $pdfSource -PathType Leaf)) { throw "Declared PDF '$($metadata.pdf)' does not exist below docs for $relative" }
+        $pdfRelative = [IO.Path]::GetRelativePath($docsRoot, $pdfSource)
+        $escapesDocs = [IO.Path]::IsPathRooted($pdfRelative) -or $pdfRelative -eq '..' -or $pdfRelative.StartsWith("..$([IO.Path]::DirectorySeparatorChar)", [StringComparison]::Ordinal) -or $pdfRelative.StartsWith("..$([IO.Path]::AltDirectorySeparatorChar)", [StringComparison]::Ordinal)
+        if ($escapesDocs -or -not [IO.Path]::GetExtension($pdfSource).Equals('.pdf', [StringComparison]::OrdinalIgnoreCase) -or -not (Test-Path -LiteralPath $pdfSource -PathType Leaf)) { throw "Declared PDF '$($metadata.pdf)' does not exist below docs for $relative" }
     } else {
         $sameName = @($pdfFiles | Where-Object { $_.BaseName -eq $file.BaseName })
         if ($sameName.Count -gt 1) { throw "More than one PDF matches $relative" }
@@ -209,7 +212,10 @@ foreach ($page in $catalogPages.GetEnumerator()) {
 $guideLines = [Collections.Generic.List[string]]::new()
 $guideLines.Add('# Guías'); $guideLines.Add(''); $guideLines.Add('Encuentre documentos por texto o por etiqueta. Todos los resultados están disponibles sin paginación.'); $guideLines.Add('')
 $guideLines.Add('<div class="library-controls"><label>Buscar guías<input id="guide-filter" type="search" placeholder="Título, autor o tema" autocomplete="off"></label><label>Etiqueta<select id="guide-tag"><option value="">Todas</option>')
-$allGuideTags = @($content | Where-Object Kind -eq 'guide' | ForEach-Object Tags | Sort-Object -Unique)
+$unmatchedPdfs = @($pdfRecords | Where-Object { -not $_.Article })
+$allGuideTags = @($content | Where-Object Kind -eq 'guide' | ForEach-Object Tags)
+if ($unmatchedPdfs.Count) { $allGuideTags += 'PDF' }
+$allGuideTags = @($allGuideTags | Sort-Object -Unique)
 foreach ($tag in $allGuideTags) { $guideLines.Add("<option value=`"$(Html $tag)`">$(Html $tag)</option>") }
 $guideLines.Add('</select></label><p id="guide-count" class="result-count" aria-live="polite"></p></div>'); $guideLines.Add('<div class="library-grid guide-library">')
 foreach ($guide in $content | Where-Object Kind -eq 'guide' | Sort-Object Title) {
@@ -218,7 +224,7 @@ foreach ($guide in $content | Where-Object Kind -eq 'guide' | Sort-Object Title)
     $pdfMarkup = if ($guide.PdfRoute) { "<a class=`"pdf-link`" href=`"$($guide.PdfRoute)`" target=`"_blank`" rel=`"noreferrer`">Abrir PDF original</a>" } else { '' }
     $guideLines.Add("<article class=`"library-card`" data-search=`"$search`" data-tags=`"$tags`"><p class=`"card-kicker`">$($guide.DateText) · $(Html $guide.Author)</p><h2><a href=`"#/content/$($guide.Slug)`">$(Html $guide.Title)</a></h2><p>$(Html $guide.Summary)</p><p class=`"tag-list`">$tagMarkup</p>$pdfMarkup</article>")
 }
-foreach ($pdf in $pdfRecords | Where-Object { -not $_.Article } | Sort-Object Title) {
+foreach ($pdf in $unmatchedPdfs | Sort-Object Title) {
     $guideLines.Add("<article class=`"library-card`" data-search=`"$(Html "$($pdf.Title) PDF")`" data-tags=`"PDF`"><p class=`"card-kicker`">Documento PDF · $(Format-Size $pdf.Bytes)</p><h2><a href=`"$($pdf.Route)`" target=`"_blank`" rel=`"noreferrer`">$(Html $pdf.Title)</a></h2><p>Documento original disponible en el visor PDF del navegador.</p><p class=`"tag-list`"><span>PDF</span></p></article>")
 }
 $guideLines.Add('</div><p class="library-empty" hidden>No hay guías que coincidan con estos filtros.</p>')

@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pwsh -NoProfile -NonInteractive -File scripts/build.ps1"
+    "build": "pwsh -NoProfile -NonInteractive -File scripts/build.ps1",
+    "test": "pwsh -NoProfile -NonInteractive -File scripts/test-build.ps1"
   },
   "devDependencies": {
     "docsify": "5.0.0",

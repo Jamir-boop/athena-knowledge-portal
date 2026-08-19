@@ -52,7 +52,7 @@ El script agrupa `.zip`, `.jar` y `.exe` por carpeta y mantiene la lista privada
 
 ## Acceso
 
-`request-access.html` es público y no depende de archivos protegidos. Cloudflare Access protege el sitio de producción y las vistas previas mediante una lista de direcciones IP. La guía pública explica cómo solicitar acceso sin publicar el número de WhatsApp.
+La URL pública canónica es `/request-access` y no depende de archivos protegidos. Cloudflare Access debe estar habilitado y verificado para proteger producción y las vistas previas mediante una lista de direcciones IP. La excepción pública debe cubrir `/request-access` y `/request-access.html`. La guía explica cómo solicitar acceso sin publicar el número de WhatsApp.
 
 ## Impeccable
 
