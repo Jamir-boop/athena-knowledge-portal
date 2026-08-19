@@ -57,6 +57,7 @@ try {
     if ([regex]::Matches($guides, 'class="library-card"').Count -ne ($GuideCount + 1)) { throw 'The Guides card count is incorrect.' }
     if ($config -match 'ATHENA_SEARCH_PATHS|namespace:\s*''athena-v3''') { throw 'The retired Docsify search configuration remains.' }
     if ($indexHtml -match 'vendor/search\.min\.js' -or $indexHtml -notmatch 'id="athena-search"') { throw 'The Athena-owned search form is not configured correctly.' }
+    if ($indexHtml -notmatch '/vendor/vue\.css\?v=[0-9a-f]{12}') { throw 'The immutable Docsify theme URL is not content-versioned.' }
     if ($searchPage -notmatch 'id="search-page-slot"' -or $searchPage -notmatch 'id="search-results"') { throw 'The dedicated search route is incomplete.' }
     if ($searchIndex.Count -ne ($GuideCount + 2)) { throw "Expected $($GuideCount + 2) search records, found $($searchIndex.Count)." }
     $indexedGuide = $searchIndex | Where-Object title -eq 'Synthetic guide 1' | Select-Object -First 1

@@ -15,7 +15,7 @@ main{width:auto}
 *{scrollbar-color:#765900 var(--bg)}
 a{color:var(--accent);text-underline-offset:.2em}
 body em{color:var(--accent-soft)!important}
-body strong{color:var(--text)}
+.markdown-section strong{color:var(--text)}
 body small{display:block;margin:.4rem 0 .75rem;color:var(--muted);line-height:1.4}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .skip-link{position:fixed;left:1rem;top:-5rem;z-index:50;background:var(--accent);color:#000;padding:.6rem 1rem;font-weight:700}

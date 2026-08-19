@@ -23,6 +23,9 @@ Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\themes\vue.
 $themePath = Join-Path $dist 'vendor\vue.css'
 $themeCss = [IO.File]::ReadAllText($themePath, [Text.Encoding]::UTF8).Replace('#34495e', '#ffb900').Replace('#2c3e50', '#fff')
 [IO.File]::WriteAllText($themePath, $themeCss, [Text.UTF8Encoding]::new($false))
+$themeVersion = (Get-FileHash -LiteralPath $themePath -Algorithm SHA256).Hash.Substring(0, 12).ToLowerInvariant()
+$siteIndexPath = Join-Path $dist 'index.html'; $siteIndexHtml = [IO.File]::ReadAllText($siteIndexPath, [Text.Encoding]::UTF8).Replace('/vendor/vue.css"', "/vendor/vue.css?v=$themeVersion`"")
+[IO.File]::WriteAllText($siteIndexPath, $siteIndexHtml, [Text.UTF8Encoding]::new($false))
 Copy-Item -Path (Join-Path $project 'src\fonts\*') -Destination (Join-Path $dist 'fonts')
 Copy-Item -Path (Join-Path $project 'src\assets\*') -Destination (Join-Path $dist 'assets')
 
