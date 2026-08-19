@@ -19,13 +19,21 @@
       <small>KNOWLEDGE PORTAL</small>
     </a>
   </div>
+  <template id="athena-search-template">
+    <form id="athena-search" class="search athena-search" role="search">
+      <label class="visually-hidden" for="athena-search-input">Buscar en Athena</label>
+      <div class="input-wrap">
+        <input id="athena-search-input" type="search" placeholder="Buscar en Athena" autocomplete="off">
+        <button class="search-submit" type="submit">Buscar</button>
+      </div>
+    </form>
+  </template>
   <span class="access-label">ACCESO INTERNO</span>
   <div id="main">
     <div id="app" aria-live="polite">Cargando Athena…</div>
   </div>
   <script src="/config.js"></script>
   <script src="/vendor/docsify.min.js"></script>
-  <script src="/vendor/search.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

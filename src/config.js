@@ -5,12 +5,6 @@ window.$docsify = {
   auto2top: true,
   maxLevel: 3,
   subMaxLevel: 0,
-  search: {
-    namespace: 'athena-v3',
-    paths: window.ATHENA_SEARCH_PATHS || 'auto',
-    placeholder: 'Buscar en Athena',
-    noData: 'Sin resultados'
-  },
   plugins: [
     function copyArticle(hook, vm) {
       hook.afterEach((html) => {

@@ -15,6 +15,7 @@ body small{display:block;margin:.4rem 0 .75rem;color:var(--muted);line-height:1.
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .skip-link{position:fixed;left:1rem;top:-5rem;z-index:50;background:var(--accent);color:#000;padding:.6rem 1rem;font-weight:700}
 .skip-link:focus{top:1rem}
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .brand{display:flex;flex-direction:column;color:var(--text);text-decoration:none;line-height:.8;text-align:center;letter-spacing:.12em}
 .brand span{font:700 32px/1 "Cormorant",Georgia,serif}
 .brand small{margin:.55rem 0 0;color:var(--accent);font:700 10px/1 "Courier Prime",monospace;letter-spacing:.22em}
@@ -22,24 +23,45 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 body.home-view .access-label{display:block;position:fixed;top:1rem;right:1rem;z-index:30}
 #main{min-height:100vh;width:auto}
 .sidebar{top:0;background:#080808;padding:1.6rem 1.2rem;color:var(--text)}
-.sidebar .app-name{display:block;margin:0 auto 1.4rem}
+.sidebar .app-name{display:block;margin:1.4rem auto}
 .sidebar .app-name .brand{color:var(--text)}
 .sidebar-nav>ul>li>a{font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .sidebar ul li a{color:var(--muted)}
 .sidebar ul li.active>a,.sidebar ul li a:hover{color:var(--accent)}
+.athena-search[hidden]{display:none!important}
 .search{margin:0 0 1.4rem!important;padding:0!important;background:var(--surface)}
-.search input{background:var(--surface);color:var(--text);border:0!important;padding:.85rem!important;font:17px "Archivo Narrow",Arial,sans-serif}
+.search .input-wrap{display:grid;grid-template-columns:minmax(0,1fr) auto}
+.search input{width:100%;min-width:0;background:var(--surface);color:var(--text);border:0!important;padding:.85rem!important;font:17px "Archivo Narrow",Arial,sans-serif}
 .search input::placeholder{color:#c9c9c9;opacity:1}
-.search .results-panel{background:var(--surface);padding:.35rem .8rem}
-.search .matching-post,.search .matching-post a,.search h2{color:var(--text)!important}
-.search p,.search p.empty{color:var(--muted)!important}
-.search .clear-button{color:var(--accent)}
+.search-submit{border:0;background:var(--accent);color:#000;padding:.75rem 1rem;font:700 12px/1 "Courier Prime",monospace;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.sidebar .search .input-wrap{grid-template-columns:1fr}
 #home-search-slot{width:min(520px,100%);margin-top:1.6rem}
 #home-search-slot .search{margin:0!important;background:#fff}
 #home-search-slot .search input{background:#fff;color:#000;padding:1rem!important}
 #home-search-slot .search input::placeholder{color:#444}
-#home-search-slot .results-panel{position:absolute;z-index:4;width:min(520px,calc(100% - 4rem));max-height:310px;overflow:auto;background:#fff;color:#000;padding:.6rem 1rem;box-shadow:0 12px 34px rgba(0,0,0,.55)}
-#home-search-slot .search .matching-post,#home-search-slot .search .matching-post a,#home-search-slot .search h2,#home-search-slot .search p,#home-search-slot .search p.empty{color:#111!important}
+#search-page-slot{margin:1.5rem 0}
+#search-page-slot .search{margin:0!important;background:#fff}
+#search-page-slot .search input{background:#fff;color:#000;padding:1rem!important;font-size:1.15rem}
+#search-page-slot .search input::placeholder{color:#444}
+.search-page{max-width:900px}
+.search-toolbar{display:flex;align-items:center;gap:.8rem;margin:0 0 1rem}
+.search-toolbar label{color:var(--muted);font-weight:700}
+.search-toolbar select{min-width:190px;border:0;background:var(--surface-2);color:var(--text);padding:.7rem;font:16px "Archivo Narrow",Arial,sans-serif}
+.search-result-count{min-height:1.55em;margin:1rem 0 2rem!important;color:var(--muted)}
+.search-results{display:grid;gap:2.4rem}
+.search-result{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr);gap:clamp(1.25rem,4vw,3rem)}
+.search-result__meta .card-kicker{margin:0 0 .6rem}
+.search-result__meta small{margin:0 0 .75rem}
+.search-result__meta .tag-list{gap:.3rem;margin:0}
+.search-result__body h2{margin:0 0 .55rem;font-size:clamp(1.8rem,4vw,2.5rem);line-height:1.05}
+.search-result__summary{margin:.55rem 0;color:var(--text)}
+.search-result__excerpt{margin:.9rem 0 0;color:var(--muted)}
+.search-result__excerpt mark{background:var(--accent);color:#000;padding:0 .08em}
+.search-result__match{margin:.8rem 0 0;color:var(--accent);font:700 12px/1.4 "Courier Prime",monospace;text-transform:uppercase}
+.search-result__actions{display:flex;flex-wrap:wrap;gap:1rem;margin:.8rem 0 0;font-weight:700}
+.search-state{padding:1.5rem 0;color:var(--muted)}
+.search-state strong{display:block;color:var(--text);font:700 1.8rem/1.1 "Cormorant",Georgia,serif}
+.search-state p{margin:.5rem 0 0}
 .content{top:0}
 .markdown-section{max-width:1080px;padding:3rem 4rem 7rem;color:var(--text)}
 .article-actions{display:flex;justify-content:flex-end;margin-bottom:1rem}
@@ -104,5 +126,5 @@ body .markdown-section tr:nth-child(2n) code{color:#5c4300!important;background:
 table{display:table!important;width:100%;border-collapse:collapse}th,td{border:0!important;padding:.7rem!important}th{background:var(--surface-2);color:var(--accent);text-align:left}
 .sidebar-toggle{position:fixed;top:auto;right:auto;bottom:1rem;left:1rem;width:42px;height:42px;padding:12px;background:var(--surface-2);border:0;border-radius:0}.sidebar-toggle span{background:var(--accent)}
 @media (min-width:1200px){body.has-page-tree .content{right:240px}.page-tree{position:fixed;top:2rem;right:1rem;z-index:5;width:220px;max-height:calc(100vh - 4rem);margin:0;overflow:auto;background:transparent}.page-tree summary{cursor:default}}
-@media (max-width:768px){.brand span{font-size:27px}.access-label{font-size:9px}.markdown-section{padding:2rem 1.1rem 5rem}.hero{grid-template-columns:1fr;min-height:0}.hero-copy{padding:2rem}.hero img{min-height:260px;max-height:360px;grid-row:1}.portal-grid,.library-grid,.library-controls{grid-template-columns:1fr}.catalog-item{grid-template-columns:1fr}.contribute-note{align-items:flex-start;flex-direction:column}.sidebar{top:0}.sidebar-toggle{top:10px;bottom:auto;left:10px;background:var(--surface-2)}body.home-view .sidebar-toggle{top:10px}#home-search-slot .search .results-panel{width:calc(100% - 2.2rem)}}
+@media (max-width:768px){.brand span{font-size:27px}.access-label{font-size:9px}.markdown-section{padding:2rem 1.1rem 5rem}.hero{grid-template-columns:1fr;min-height:0}.hero-copy{padding:2rem}.hero img{min-height:260px;max-height:360px;grid-row:1}.portal-grid,.library-grid,.library-controls{grid-template-columns:1fr}.catalog-item{grid-template-columns:1fr}.contribute-note{align-items:flex-start;flex-direction:column}.sidebar{top:0}.sidebar-toggle{top:10px;bottom:auto;left:10px;background:var(--surface-2)}body.home-view .sidebar-toggle{top:10px}.search .input-wrap{grid-template-columns:1fr}.search-result{grid-template-columns:1fr;gap:.65rem}.search-toolbar{align-items:stretch;flex-direction:column}.search-toolbar select{width:100%}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}

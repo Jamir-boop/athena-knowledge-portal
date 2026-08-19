@@ -61,3 +61,11 @@ Impeccable está instalado solo en este proyecto. Verifique la instalación con:
 ```powershell
 npx -y impeccable check --providers=codex --scope=project
 ```
+
+## Navegación por página
+
+Athena crea automáticamente el índice lateral **En esta página** con los títulos `#`, `##` y `###` de cada documento. Use esos niveles en orden y no mantenga un índice manual.
+
+## Búsqueda
+
+El build crea `search-index.json` y la ruta `#/search` a partir de los metadatos, títulos, secciones y texto de los documentos aprobados. Los documentos futuros quedan incluidos automáticamente; no mantenga una lista de rutas ni un índice manual.

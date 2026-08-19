@@ -19,7 +19,6 @@ New-Item -ItemType Directory -Force -Path $dist, (Join-Path $dist 'content'), (J
 
 Copy-Item -LiteralPath (Join-Path $project 'src\index.html'), (Join-Path $project 'src\styles.css'), (Join-Path $project 'src\config.js'), (Join-Path $project 'src\app.js'), (Join-Path $project 'src\request-access.html'), (Join-Path $project 'src\_headers') -Destination $dist
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\docsify.min.js') -Destination (Join-Path $dist 'vendor\docsify.min.js')
-Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\plugins\search.min.js') -Destination (Join-Path $dist 'vendor\search.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\themes\vue.css') -Destination (Join-Path $dist 'vendor\vue.css')
 $themePath = Join-Path $dist 'vendor\vue.css'
 $themeCss = [IO.File]::ReadAllText($themePath, [Text.Encoding]::UTF8).Replace('#34495e', '#ffb900')
@@ -28,6 +27,34 @@ Copy-Item -Path (Join-Path $project 'src\fonts\*') -Destination (Join-Path $dist
 Copy-Item -Path (Join-Path $project 'src\assets\*') -Destination (Join-Path $dist 'assets')
 
 function Write-Utf8([string]$Path, [string]$Value) { [IO.File]::WriteAllText($Path, $Value, [Text.UTF8Encoding]::new($false)) }
+
+function ConvertTo-SearchText([string]$Markdown) {
+    $text = [regex]::Replace($Markdown, '(?ms)<!--.*?-->', ' ')
+    $text = [regex]::Replace($text, '(?ms)```[^\r\n]*\r?\n(.*?)```', '$1')
+    $text = [regex]::Replace($text, '!\[([^\]]*)\]\([^)]+\)', '$1')
+    $text = [regex]::Replace($text, '\[([^\]]+)\]\([^)]+\)', '$1')
+    $text = [regex]::Replace($text, '<[^>]+>', ' ')
+    $text = [regex]::Replace($text, '(?m)^\s{0,3}#{1,6}\s+', '')
+    $text = [regex]::Replace($text, '(?m)^\s*(?:>\s*|[-+]\s+|\d+\.\s+)', '')
+    $text = $text -replace '[`*_~]', ''
+    return [regex]::Replace([Net.WebUtility]::HtmlDecode($text), '\s+', ' ').Trim()
+}
+
+function Get-SearchHeadings([string]$Markdown) {
+    $matches = [regex]::Matches($Markdown, '(?m)^\s{0,3}(#{2,6})\s+(.+?)\s*#*\s*$')
+    $headings = [Collections.Generic.List[object]]::new()
+    for ($index = 0; $index -lt $matches.Count; $index++) {
+        $match = $matches[$index]
+        $contentStart = $match.Index + $match.Length
+        $contentEnd = if ($index + 1 -lt $matches.Count) { $matches[$index + 1].Index } else { $Markdown.Length }
+        $headings.Add([pscustomobject]@{
+            level = $match.Groups[1].Value.Length
+            title = ConvertTo-SearchText $match.Groups[2].Value
+            text = ConvertTo-SearchText $Markdown.Substring($contentStart, $contentEnd - $contentStart)
+        })
+    }
+    return @($headings)
+}
 function Get-Slug([string]$Value) {
     $normalized = $Value.Normalize([Text.NormalizationForm]::FormD)
     $letters = -join ($normalized.ToCharArray() | Where-Object { [Globalization.CharUnicodeInfo]::GetUnicodeCategory($_) -ne [Globalization.UnicodeCategory]::NonSpacingMark })
@@ -247,6 +274,81 @@ foreach ($update in $updates) {
 }
 $updateLines.Add('</div>'); Write-Utf8 (Join-Path $dist 'updates.md') ($updateLines -join "`n")
 
+$searchIndex = [Collections.Generic.List[object]]::new()
+foreach ($article in $content) {
+    $searchIndex.Add([pscustomobject][ordered]@{
+        kind = $article.Kind
+        title = $article.Title
+        summary = $article.Summary
+        author = $article.Author
+        date = $article.DateText
+        tags = @($article.Tags)
+        route = "#/content/$($article.Slug)"
+        pdf = $article.PdfRoute
+        text = ConvertTo-SearchText $article.Body
+        headings = @(Get-SearchHeadings $article.Body)
+    })
+}
+foreach ($pdf in $unmatchedPdfs) {
+    $searchIndex.Add([pscustomobject][ordered]@{
+        kind = 'pdf'
+        title = $pdf.Title
+        summary = 'Documento original disponible en el visor PDF del navegador.'
+        author = ''
+        date = ''
+        tags = @('PDF')
+        route = $pdf.Route
+        pdf = $pdf.Route
+        text = ''
+        headings = @()
+    })
+}
+foreach ($item in @($catalog)) {
+    $catalogRoute = switch ($item.section) {
+        'Framework' { '#/framework' }
+        'Paquetes' { '#/packages' }
+        'Ejercicios' { '#/exercises' }
+        'Archivo' { '#/archive' }
+        default { '#/downloads' }
+    }
+    $searchIndex.Add([pscustomobject][ordered]@{
+        kind = 'download'
+        title = $item.name
+        summary = "Archivo aprobado de $($item.size) en $($item.section)."
+        author = ''
+        date = ''
+        tags = @($item.section, [IO.Path]::GetExtension($item.name).TrimStart('.').ToUpperInvariant())
+        route = $catalogRoute
+        pdf = $null
+        text = "$($item.relativePath) $($item.folderPath)"
+        headings = @()
+    })
+}
+$searchJson = ConvertTo-Json -InputObject @($searchIndex) -Depth 5
+Write-Utf8 (Join-Path $dist 'search-index.json') $searchJson
+
+$searchPage = @'
+# Buscar en Athena
+
+<div class="search-page">
+  <div id="search-page-slot" aria-label="Buscar en Athena"></div>
+  <div class="search-toolbar">
+    <label for="athena-search-type">Tipo de contenido</label>
+    <select id="athena-search-type">
+      <option value="">Todo</option>
+      <option value="guide">Guías</option>
+      <option value="tool">Herramientas</option>
+      <option value="update">Actualizaciones</option>
+      <option value="download">Descargas</option>
+      <option value="pdf">PDF</option>
+    </select>
+  </div>
+  <p id="search-result-count" class="search-result-count" aria-live="polite"></p>
+  <div id="search-results" class="search-results" aria-live="polite"></div>
+</div>
+'@
+Write-Utf8 (Join-Path $dist 'search.md') $searchPage
+
 $homePage = @'
 <section class="hero">
   <div class="hero-copy">
@@ -281,9 +383,6 @@ $sidebar = @'
 '@
 Write-Utf8 (Join-Path $dist '_sidebar.md') $sidebar
 
-$searchPaths = @('/', '/guides', '/updates', '/tools', '/downloads', '/archive', '/framework', '/packages', '/exercises') + @($content | ForEach-Object { "/content/$($_.Slug)" })
-$configPath = Join-Path $dist 'config.js'; $config = "window.ATHENA_SEARCH_PATHS = $($searchPaths | ConvertTo-Json -Compress);`n" + [IO.File]::ReadAllText($configPath, [Text.Encoding]::UTF8); Write-Utf8 $configPath $config
-
 $largeOutput = @(Get-ChildItem -LiteralPath $dist -File -Recurse | Where-Object Length -ge $pdfLimit)
 if ($largeOutput) { throw "Pages output contains a file of 25 MiB or more: $($largeOutput.FullName -join ', ')" }
 $publicFiles = Get-ChildItem -LiteralPath $dist -File -Recurse; $publicTextFiles = @($publicFiles | Where-Object Extension -in '.css', '.html', '.js', '.json', '.md')
@@ -293,5 +392,7 @@ if ($publicTextFiles | Select-String -SimpleMatch '#34495e' -ErrorAction Silentl
 $downloadPage = [IO.File]::ReadAllText((Join-Path $dist 'downloads.md'), [Text.Encoding]::UTF8); $downloadAnchorCount = [regex]::Matches($downloadPage, '<a class="download-link" href="https://(?:1drv\.ms|onedrive\.live\.com)/').Count
 if ($downloadAnchorCount -ne $configuredTargets.Count) { throw 'The generated download whitelist does not match the approved catalog targets.' }
 if (Select-String -LiteralPath (Join-Path $dist 'catalog.json') -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) { throw 'OneDrive URLs must not be written into catalog.json.' }
+if (Select-String -LiteralPath (Join-Path $dist 'search-index.json') -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) { throw 'OneDrive URLs must not be written into search-index.json.' }
+if ($searchIndex.Count -ne ($content.Count + $unmatchedPdfs.Count + @($catalog).Count)) { throw 'The generated search index is incomplete.' }
 if ((Get-ChildItem -LiteralPath (Join-Path $dist 'content') -Filter '*.md').Count -ne $content.Count) { throw 'Not every Markdown document produced a content route.' }
 Write-Host "Built Athena with $(@($content | Where-Object Kind -eq 'guide').Count) guides, $(@($content | Where-Object Kind -eq 'tool').Count) tools, $($pdfRecords.Count) PDFs, and $($configuredTargets.Count) configured OneDrive links."

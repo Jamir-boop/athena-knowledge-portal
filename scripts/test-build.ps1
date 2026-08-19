@@ -14,6 +14,7 @@ function New-Source([string]$Name) {
 
 function Write-Guide([string]$Root, [string]$Name, [string]$Metadata, [string]$Title = 'Test guide') {
     $markdown = "<!-- athena: $Metadata -->`n# $Title`n`nSearchable UTF-8 content: Guía de implementación.`n"
+    $markdown += "`n## Test section`n`n### Test detail`n`n#### Hidden depth`n"
     [IO.File]::WriteAllText((Join-Path $Root "docs\$Name.md"), $markdown, [Text.UTF8Encoding]::new($false))
 }
 
@@ -45,14 +46,30 @@ try {
     $guides = [IO.File]::ReadAllText((Join-Path $dist 'guides.md'), [Text.Encoding]::UTF8)
     $config = [IO.File]::ReadAllText((Join-Path $dist 'config.js'), [Text.Encoding]::UTF8)
     $catalog = [IO.File]::ReadAllText((Join-Path $dist 'catalog.json'), [Text.Encoding]::UTF8)
+    $searchPage = [IO.File]::ReadAllText((Join-Path $dist 'search.md'), [Text.Encoding]::UTF8)
+    $searchIndexJson = [IO.File]::ReadAllText((Join-Path $dist 'search-index.json'), [Text.Encoding]::UTF8)
+    $searchIndex = @($searchIndexJson | ConvertFrom-Json)
+    $indexHtml = [IO.File]::ReadAllText((Join-Path $dist 'index.html'), [Text.Encoding]::UTF8)
     $firstGuide = [IO.File]::ReadAllText((Join-Path $dist 'content\guide-001.md'), [Text.Encoding]::UTF8)
+    $appScript = [IO.File]::ReadAllText((Join-Path $dist 'app.js'), [Text.Encoding]::UTF8)
+    $styles = [IO.File]::ReadAllText((Join-Path $dist 'styles.css'), [Text.Encoding]::UTF8)
     if ($contentCount -ne $GuideCount) { throw "Expected $GuideCount content routes, found $contentCount." }
     if ([regex]::Matches($guides, 'class="library-card"').Count -ne ($GuideCount + 1)) { throw 'The Guides card count is incorrect.' }
-    if ([regex]::Matches($config, '"/content/guide-').Count -ne $GuideCount) { throw 'The explicit search-path count is incorrect.' }
+    if ($config -match 'ATHENA_SEARCH_PATHS|namespace:\s*''athena-v3''') { throw 'The retired Docsify search configuration remains.' }
+    if ($indexHtml -match 'vendor/search\.min\.js' -or $indexHtml -notmatch 'id="athena-search"') { throw 'The Athena-owned search form is not configured correctly.' }
+    if ($searchPage -notmatch 'id="search-page-slot"' -or $searchPage -notmatch 'id="search-results"') { throw 'The dedicated search route is incomplete.' }
+    if ($searchIndex.Count -ne ($GuideCount + 2)) { throw "Expected $($GuideCount + 2) search records, found $($searchIndex.Count)." }
+    $indexedGuide = $searchIndex | Where-Object title -eq 'Synthetic guide 1' | Select-Object -First 1
+    if (-not $indexedGuide -or $indexedGuide.route -ne '#/content/guide-001' -or @($indexedGuide.headings).Count -ne 3 -or (@($indexedGuide.headings.level) -join ',') -ne '2,3,4') { throw 'Guide search metadata or heading sections are incomplete.' }
+    if (-not ($searchIndex | Where-Object kind -eq 'pdf') -or -not ($searchIndex | Where-Object kind -eq 'download')) { throw 'PDF and download search records are missing.' }
     if ($guides -notmatch '<option value="PDF">PDF</option>' -or $guides -notmatch 'data-tags="PDF"') { throw 'Unmatched PDFs must have a selectable PDF tag.' }
     if (-not (Test-Path -LiteralPath (Join-Path $dist 'content\guide-001.md'))) { throw 'An existing guide route was not preserved.' }
     if ($firstGuide -notmatch 'Guía de implementación' -or $firstGuide -match 'GuÃ') { throw 'UTF-8 guide text was not preserved.' }
     if ($catalog -match '1drv\.ms|onedrive\.live\.com') { throw 'Private OneDrive links entered catalog.json.' }
+    if ($searchIndexJson -match '1drv\.ms|onedrive\.live\.com') { throw 'Private OneDrive links entered search-index.json.' }
+    if ($firstGuide -notmatch '## Test section' -or $firstGuide -notmatch '### Test detail') { throw 'Nested guide headings were not preserved.' }
+    if ($appScript -notmatch 'h1\[id\],h2\[id\],h3\[id\]' -or $styles -notmatch '\.page-tree') { throw 'Automatic page-tree assets are missing.' }
+    if ($appScript -notmatch "fetch\('/search-index\.json'\)" -or $appScript -notmatch 'replaceSearchUrl' -or $styles -notmatch '\.search-result') { throw 'Dedicated search assets are missing.' }
 
     $scalar = New-Source 'scalar-tags'
     Write-Guide $scalar 'scalar' '{"kind":"guide","date":"2026-08-19","author":"Test","summary":"Test","tags":"Test","slug":"scalar"}'
@@ -72,7 +89,9 @@ try {
     try { $stream.SetLength(25MB) } finally { $stream.Dispose() }
     Assert-BuildFails $oversized 'PDF files must be smaller than 25 MiB'
 
-    Write-Host "Build checks passed with $GuideCount guides and metadata, PDF, UTF-8, route, tag, and link regressions."
+    & node (Join-Path $PSScriptRoot 'test-search.mjs')
+    if ($LASTEXITCODE -ne 0) { throw 'Search logic checks failed.' }
+    Write-Host "Build checks passed with $GuideCount guides and metadata, search, PDF, UTF-8, route, tag, and link regressions."
 } finally {
     $resolvedTestRoot = [IO.Path]::GetFullPath($testRoot)
     $resolvedTemp = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
