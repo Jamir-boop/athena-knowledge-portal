@@ -1,57 +1,63 @@
 # Athena Knowledge Portal
 
-Portal público y estático. Los documentos y archivos de descarga siguen bajo control de `C:\Users\superuser\OneDrive\dev\framework`.
+Portal estático en español para guías, actualizaciones, herramientas y descargas de Automation Anywhere. Los documentos canónicos y los archivos de descarga viven en `C:\Users\superuser\OneDrive\dev\framework`.
 
-## Uso
+## Publicar
 
 ```powershell
 npm install
 .\deploy.ps1
 ```
 
-Para crear o actualizar todos los enlaces de descarga aprobados, ejecute un solo comando:
+El build valida los documentos, crea `dist\` y publica solo archivos estáticos en Cloudflare Pages. No usa base de datos, CMS, Pages Functions, Workers ni R2. El costo permitido de Cloudflare es USD 0.
+
+## Agregar o actualizar contenido
+
+Guarde cada Markdown debajo de `C:\Users\superuser\OneDrive\dev\framework\docs`. La primera línea debe contener metadatos JSON en este formato:
+
+```html
+<!-- athena: {"kind":"guide","date":"2026-08-19","author":"Jeiser Vargas","summary":"Descripción breve","tags":["Recorder","Web"],"slug":"ejemplo"} -->
+```
+
+Valores de `kind`: `page`, `guide`, `tool`, `announcement` y `release`. Los perfiles de herramientas también usan `status` con `stable`, `alpha` o `coming-soon`. `url` y `downloadFile` son opcionales. Una guía puede usar `pdf` para asociar el archivo original.
+
+Para agregar un documento:
+
+1. Cree el Markdown con los metadatos y un título `#`.
+2. Guárdelo en `docs`, `docs\tools` o `docs\updates`.
+3. Ejecute `npm run build`.
+4. Revise el resultado y ejecute `.\deploy.ps1`.
+
+Para actualizarlo, edite el mismo archivo y vuelva a publicar. No cambie `slug` si debe conservar la URL. OneDrive conserva la copia de respaldo; `dist\` es un resultado regenerable.
+
+Los PDF menores de 25 MiB se copian al sitio y se abren en otra pestaña. Un PDF con el mismo nombre que un Markdown se asocia automáticamente. También puede declarar otro nombre con `pdf`. Un PDF sin Markdown aparece como guía independiente.
+
+## Descargas de OneDrive
+
+Para crear o actualizar los enlaces aprobados:
 
 ```powershell
 .\scripts\sync-onedrive-links.ps1
 .\deploy.ps1
 ```
 
-Para invalidar los enlaces publicados y crear otros nuevos:
+Para rotarlos:
 
 ```powershell
 .\scripts\sync-onedrive-links.ps1 -Rotate
 .\deploy.ps1
 ```
 
-El primer uso puede abrir una autorización de Microsoft. Después, el contexto queda asociado al usuario actual. El script descubre de forma recursiva los `.zip`, `.jar` y `.exe`, agrupa los archivos por carpeta, crea un enlace anónimo de solo lectura por carpeta y reemplaza la lista blanca privada. No imprime las URLs. Un archivo aprobado que esté en la raíz conserva un enlace individual para no compartir todo `framework`.
+El script agrupa `.zip`, `.jar` y `.exe` por carpeta y mantiene la lista privada en `.secrets\onedrive-links.json`. No imprima ni confirme ese archivo en Git. Nunca comparta la raíz `framework`, porque contiene documentos que no forman parte de las descargas.
 
-Sin `-Rotate`, OneDrive puede reutilizar un enlace existente. Con `-Rotate`, el script revoca cualquier enlace anónimo amplio de `framework`, elimina los enlaces directos anteriores de los archivos y renueva los enlaces de carpeta.
+## Acceso
 
-El módulo oficial `Microsoft.Graph.Authentication` se descarga en `.tools\` y no se instala de forma global. El archivo `.secrets\onedrive-links.json` no entra en Git. El build usa sus claves como lista blanca, refleja el contenido de cada carpeta y escribe un solo enlace público por carpeta aprobada. Cualquier otra carpeta permanece como **Pendiente**.
-
-Todo visitante puede ver y copiar los enlaces anónimos de OneDrive. Ejecute `sync-onedrive-links.ps1 -Rotate` y vuelva a desplegar para rotarlos. Durante esos dos pasos, algunos enlaces publicados pueden dejar de funcionar hasta completar el despliegue.
-
-`set-link.ps1` queda disponible solo como alternativa para corregir un enlace individual desde el portapapeles.
-
-## Artículos
-
-Los Markdown canónicos viven en `C:\Users\superuser\OneDrive\dev\framework\docs`. Para agregar un artículo, cree un archivo `.md` con un título `#` en esa carpeta y ejecute `.\deploy.ps1`. El build descubre todos los Markdown, genera su ruta, lo agrega a **Guías** y lo incluye en la búsqueda.
-
-Para actualizar un artículo, edite el mismo archivo y vuelva a desplegar. OneDrive conserva la copia sincronizada; `dist\` es solo el resultado publicable y se puede regenerar.
-
-Las reglas editoriales están en `docs\contributing.md` dentro de la carpeta canónica y se publican como **Cómo contribuir**.
+`request-access.html` es público y no depende de archivos protegidos. Cloudflare Access protege el sitio de producción y las vistas previas mediante una lista de direcciones IP. La guía pública explica cómo solicitar acceso sin publicar el número de WhatsApp.
 
 ## Impeccable
 
-Impeccable está instalado solo para este proyecto en `.agents\skills\impeccable\`. Verifique la instalación con:
+Impeccable está instalado solo en este proyecto. Verifique la instalación con:
 
 ```powershell
 npx -y impeccable check --providers=codex --scope=project
 ```
-
-## Límites deliberados
-
-- No hay base de datos, CMS, Pages Functions, Workers ni almacenamiento R2.
-- El costo permitido de Cloudflare es USD 0. Consulte `AGENTS.md` antes de cambiar cualquier servicio de Cloudflare.
-- Athena publica un índice de vínculos de OneDrive; OneDrive controla sus permisos y revocación.
-- Los vínculos de OneDrive se crean de forma automática con Microsoft Graph y el permiso delegado `Files.ReadWrite`.
