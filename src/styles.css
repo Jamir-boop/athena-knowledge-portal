@@ -16,7 +16,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .skip-link{position:fixed;left:1rem;top:-5rem;z-index:50;background:var(--accent);color:#000;padding:.6rem 1rem;font-weight:700}
 .skip-link:focus{top:1rem}
 .site-header{position:sticky;top:0;z-index:20;height:84px;display:none;align-items:center;justify-content:space-between;padding:0 2rem;background:#000}
-body.home-view .site-header{display:flex}
+body.home-view .site-header{display:flex;justify-content:flex-end}
 .brand{display:flex;flex-direction:column;color:var(--text);text-decoration:none;line-height:.8;text-align:center;letter-spacing:.12em}
 .brand span{font:700 32px/1 "Cormorant",Georgia,serif}
 .brand small{margin:.55rem 0 0;color:var(--accent);font:700 10px/1 "Courier Prime",monospace;letter-spacing:.22em}
@@ -26,7 +26,7 @@ body.home-view #main{min-height:calc(100vh - 84px)}
 .sidebar{top:0;background:#080808;padding:1.6rem 1.2rem;color:var(--text)}
 body.home-view .sidebar{top:84px}
 .sidebar .app-name{display:block;margin:0 auto 1.4rem}
-body.home-view .sidebar .app-name{display:none}
+body.home-view .site-header a.brand{display:none}
 .sidebar .app-name .brand{color:var(--text)}
 .sidebar-nav>ul>li>a{font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .sidebar ul li a{color:var(--muted)}
@@ -47,6 +47,13 @@ body.home-view .sidebar .app-name{display:none}
 .content{top:0}
 .markdown-section{max-width:1080px;padding:3rem 4rem 7rem;color:var(--text)}
 .article-actions{display:flex;justify-content:flex-end;margin-bottom:1rem}
+.page-tree{margin:0 0 1.5rem;padding:1rem 1.1rem;background:var(--surface);font-size:.9rem}
+.page-tree summary{color:var(--accent);cursor:pointer;font:700 12px/1.3 "Courier Prime",monospace;letter-spacing:.08em;text-transform:uppercase}
+.page-tree ol{list-style:none;margin:.85rem 0 0;padding:0}
+.page-tree li{margin:.4rem 0;line-height:1.25}
+.page-tree__level-2{padding-left:.8rem}.page-tree__level-3{padding-left:1.6rem}
+.page-tree a{display:block;color:var(--muted);text-decoration:none}
+.page-tree a:hover,.page-tree a[aria-current="location"]{color:var(--accent)}
 .copy-page{display:inline-flex;align-items:center;gap:.45rem;border:0;border-radius:.55rem;background:var(--text);color:#000;padding:.55rem .75rem;font:700 13px "Archivo Narrow",Arial,sans-serif;cursor:pointer}
 .copy-page:hover{background:var(--accent)}
 .copy-page svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -100,5 +107,6 @@ body .markdown-section tr:nth-child(2n) code{color:#5c4300!important;background:
 .download-link{background:var(--accent);color:#000!important}.download-pending{background:#333;color:var(--muted)}
 table{display:table!important;width:100%;border-collapse:collapse}th,td{border:0!important;padding:.7rem!important}th{background:var(--surface-2);color:var(--accent);text-align:left}
 .sidebar-toggle{position:fixed;top:auto;right:auto;bottom:1rem;left:1rem;width:42px;height:42px;padding:12px;background:var(--surface-2);border:0;border-radius:0}.sidebar-toggle span{background:var(--accent)}
+@media (min-width:1200px){body.has-page-tree .content{right:240px}.page-tree{position:fixed;top:2rem;right:1rem;z-index:5;width:220px;max-height:calc(100vh - 4rem);margin:0;overflow:auto;background:transparent}.page-tree summary{cursor:default}}
 @media (max-width:768px){.site-header{height:72px;padding:0 1rem}.brand span{font-size:27px}.access-label{font-size:9px}.markdown-section{padding:2rem 1.1rem 5rem}.hero{grid-template-columns:1fr;min-height:0}.hero-copy{padding:2rem}.hero img{min-height:260px;max-height:360px;grid-row:1}.portal-grid,.library-grid,.library-controls{grid-template-columns:1fr}.catalog-item{grid-template-columns:1fr}.contribute-note{align-items:flex-start;flex-direction:column}.sidebar{top:0}body.home-view .sidebar{top:72px}.sidebar-toggle{top:10px;bottom:auto;left:10px;background:var(--surface-2)}body.home-view .sidebar-toggle{top:82px}#home-search-slot .search .results-panel{width:calc(100% - 2.2rem)}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
