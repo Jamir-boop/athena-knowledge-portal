@@ -1,4 +1,25 @@
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
+  const copyButton = event.target.closest('button.copy-page');
+  if (copyButton) {
+    const label = copyButton.querySelector('span');
+    try {
+      const route = decodeURIComponent(location.hash.slice(1).split('?')[0]);
+      const response = await fetch(route.endsWith('.md') ? route : `${route}.md`);
+      if (!response.ok) throw new Error(`Article request failed: ${response.status}`);
+      await navigator.clipboard.writeText(await response.text());
+      copyButton.classList.add('copied');
+      label.textContent = 'Copiado';
+      setTimeout(() => {
+        if (!copyButton.isConnected) return;
+        copyButton.classList.remove('copied');
+        label.textContent = 'Copiar página';
+      }, 2000);
+    } catch {
+      label.textContent = 'No se pudo copiar';
+    }
+    return;
+  }
+
   const link = event.target.closest('a.download-link');
   if (!link || link.getAttribute('aria-disabled') === 'true') return;
   event.preventDefault();
