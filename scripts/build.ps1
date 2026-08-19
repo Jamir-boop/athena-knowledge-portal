@@ -21,7 +21,7 @@ Copy-Item -LiteralPath (Join-Path $project 'src\index.html'), (Join-Path $projec
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\docsify.min.js') -Destination (Join-Path $dist 'vendor\docsify.min.js')
 Copy-Item -LiteralPath (Join-Path $project 'node_modules\docsify\lib\themes\vue.css') -Destination (Join-Path $dist 'vendor\vue.css')
 $themePath = Join-Path $dist 'vendor\vue.css'
-$themeCss = [IO.File]::ReadAllText($themePath, [Text.Encoding]::UTF8).Replace('#34495e', '#ffb900')
+$themeCss = [IO.File]::ReadAllText($themePath, [Text.Encoding]::UTF8).Replace('#34495e', '#ffb900').Replace('#2c3e50', '#fff')
 [IO.File]::WriteAllText($themePath, $themeCss, [Text.UTF8Encoding]::new($false))
 Copy-Item -Path (Join-Path $project 'src\fonts\*') -Destination (Join-Path $dist 'fonts')
 Copy-Item -Path (Join-Path $project 'src\assets\*') -Destination (Join-Path $dist 'assets')
@@ -388,7 +388,7 @@ if ($largeOutput) { throw "Pages output contains a file of 25 MiB or more: $($la
 $publicFiles = Get-ChildItem -LiteralPath $dist -File -Recurse; $publicTextFiles = @($publicFiles | Where-Object Extension -in '.css', '.html', '.js', '.json', '.md')
 $mojibakePattern = '[\u00C2\u00C3][\u0080-\u00BF]|\u00E2\u20AC.|\uFFFD'; $badEncoding = @($publicTextFiles | Where-Object { [regex]::IsMatch([IO.File]::ReadAllText($_.FullName, [Text.Encoding]::UTF8), $mojibakePattern) })
 if ($badEncoding) { throw "Generated text contains mojibake: $($badEncoding.FullName -join ', ')" }
-if ($publicTextFiles | Select-String -SimpleMatch '#34495e' -ErrorAction SilentlyContinue) { throw 'The deprecated low-contrast color #34495e remains in the public output.' }
+if ($publicTextFiles | Select-String -Pattern '#34495e|#2c3e50' -ErrorAction SilentlyContinue) { throw 'A deprecated low-contrast color remains in the public output.' }
 $downloadPage = [IO.File]::ReadAllText((Join-Path $dist 'downloads.md'), [Text.Encoding]::UTF8); $downloadAnchorCount = [regex]::Matches($downloadPage, '<a class="download-link" href="https://(?:1drv\.ms|onedrive\.live\.com)/').Count
 if ($downloadAnchorCount -ne $configuredTargets.Count) { throw 'The generated download whitelist does not match the approved catalog targets.' }
 if (Select-String -LiteralPath (Join-Path $dist 'catalog.json') -Pattern '1drv\.ms|onedrive\.live\.com' -ErrorAction SilentlyContinue) { throw 'OneDrive URLs must not be written into catalog.json.' }
