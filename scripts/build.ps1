@@ -357,7 +357,7 @@ $homePage = @'
   <div class="hero-copy">
     <p class="eyebrow">Automation Anywhere</p>
     <h1>Athena</h1>
-    <p>Conocimiento probado, herramientas y actualizaciones para crear y operar automatizaciones.</p>
+    <p>Conocimiento, herramientas y actualizaciones para desarrolladores.</p>
     <div id="home-search-slot" aria-label="Buscar en Athena"></div>
   </div>
   <img src="/assets/athena-dither-2.webp" alt="" width="900" height="900">
